@@ -14,20 +14,20 @@ typedef struct Node {
 } Node;
 
 
-typedef struct {
-       Node first;
-       Node currentIteration;
+struct AmountSet_t {
+       Node* first;
+       Node* currentIteration;
        int length;
-} AmountSet_t;
+};
 
 AmountSet asCreate()
 {
-    AmountSet amountSet = (*AmountSet) malloc(sizeof(AmountSet));
+    AmountSet amountSet = (AmountSet) malloc(sizeof(AmountSet));
     if(amountSet == NULL){
         return NULL;
     }
     amountSet->first = NULL;
-    return *amountSet;
+    return amountSet;
 }
 
 void asDestroy(AmountSet set)
@@ -35,24 +35,22 @@ void asDestroy(AmountSet set)
     if(!set){
         return;
     }
-    Node ptr = set.first;
+    Node* ptr = set->first;
     while(ptr){
-        Node toDelete = ptr;
+        Node* toDelete = ptr;
         ptr = ptr->next;
         free(toDelete);
     }
-    if(set){
-        free(set);
-    }
+    free(set);
 }
 
 AmountSet asCopy(AmountSet set)
 {
-    AmountSet copy = (*AmountSet) malloc(sizeof(AmountSet));
+    AmountSet copy = (AmountSet) malloc(sizeof(AmountSet));
     if(!copy){
         return NULL;
     }
-    Node* source = set.first;
+    Node* source = set->first;
     Node* destination;
     while(source){
         destination = (*Node) malloc(sizeof(Node));
@@ -64,10 +62,10 @@ AmountSet asCopy(AmountSet set)
         destination = destination->next;
         source = source->next;
     }
-    copy.first = destination;
-    copy.length = set.length;
-    copy.currentIteration = NULL;
-    set.currentIteration = NULL
+    copy->first = destination;
+    copy->length = set->length;
+    copy->currentIteration = NULL;
+    set->currentIteration = NULL;
 }
 
 int asGetSize(AmountSet set)
@@ -75,7 +73,7 @@ int asGetSize(AmountSet set)
     if(!set){
         return -1;
     }
-    return set.length;
+    return set->length;
 }
 
 bool asContains(AmountSet set, const char* element)
@@ -84,7 +82,7 @@ bool asContains(AmountSet set, const char* element)
         return false;
     }
     int isFound = NOT_FOUND;
-    for(char* iterator = asGetFirst(set) ; isFound = strcmp(iterator, element) != FOUND
+    for(char* iterator = asGetFirst(set) ; (isFound = strcmp(iterator, element)) != FOUND
             && !iterator; iterator = asGetNext(set)); // Iterate until strcmp give equal strings or reached end of list
     return isFound == FOUND;
 }
