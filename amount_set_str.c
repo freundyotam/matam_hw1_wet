@@ -53,7 +53,7 @@ AmountSet asCopy(AmountSet set)
     Node* source = set->first;
     Node* destination;
     while(source){
-        destination = (*Node) malloc(sizeof(Node));
+        destination = (Node*) malloc(sizeof(Node));
         if(!destination){
             return NULL;
         }
@@ -66,6 +66,7 @@ AmountSet asCopy(AmountSet set)
     copy->length = set->length;
     copy->currentIteration = NULL;
     set->currentIteration = NULL;
+    return copy;
 }
 
 int asGetSize(AmountSet set)
@@ -81,43 +82,130 @@ bool asContains(AmountSet set, const char* element)
     if(!set){
         return false;
     }
-    int isFound = NOT_FOUND;
-    for(char* iterator = asGetFirst(set) ; (isFound = strcmp(iterator, element)) != FOUND
-            && !iterator; iterator = asGetNext(set)); // Iterate until strcmp give equal strings or reached end of list
-    return isFound == FOUND;
+    AS_FOREACH(char*, setElement, set){
+        if(!strcmp(element, setElement)){
+            return true;
+        }
+    }
+    return false;
 }
 
-AmountSetResult asGetAmount(AmountSet set, ASElement element, double *outAmount)
+AmountSetResult asGetAmount(AmountSet set, const char* element, double* outAmount)
 {
+    if(!set || !element || !outAmount){
+        return AS_NULL_ARGUMENT;
+    }
+    int numberOfOccurrences = 0;
+    AS_FOREACH(char*, setElement, set){
+        if(!strcmp(setElement, element)){
+            numberOfOccurrences++;
+        }
+    }
+    if(numberOfOccurrences == 0){
+        return AS_ITEM_DOES_NOT_EXIST;
+    }
+    *outAmount = numberOfOccurrences;
+    return AS_SUCCESS;
 
 }
+AmountSetResult addAtInit(AmountSet set, const char* element){
+    set->first = (Node*) malloc(sizeof(Node));
+    if(!set->first){
+        return AS_OUT_OF_MEMORY;
+    }
+    strcpy(set->first->element, element);
+    set->first->amount = 0;
+    return AS_SUCCESS;
+}
 
-AmountSetResult asRegister(AmountSet set, ASElement element)
+AmountSetResult addAtBeginning(AmountSet set, const char* element){
+    Node* newFirst = (Node*) malloc(sizeof(Node));
+    if(!newFirst){
+        return AS_OUT_OF_MEMORY;
+    }
+    strcpy(newFirst->element, element);
+    newFirst->next = set->first;
+    newFirst->amount = 0;
+    set->first = newFirst;
+    return AS_SUCCESS;
+}
+
+AmountSetResult addAtEnd(Node iterator, const char* element)
 {
-
+    iterator.next = (Node*) malloc(sizeof(Node));
+    if(!iterator.next){
+        return AS_OUT_OF_MEMORY;
+    }
+    strcpy(iterator.next->element, element);
+    iterator.next->amount = 0;
+    return AS_SUCCESS;
 }
 
-AmountSetResult asChangeAmount(AmountSet set, ASElement element, const double amount)
+AmountSetResult addAfterCurrentNode(Node current, const char* element){
+    Node* new = (Node*) malloc(sizeof(Node));
+    if(!new){
+        return AS_OUT_OF_MEMORY;
+    }
+    strcpy(new->element, element);
+    new->next = current.next;
+    current.next = new;
+    return AS_SUCCESS;
+}
+
+AmountSetResult asRegister(AmountSet set, const char* element)
 {
+    if(!set || !element){
+        return AS_NULL_ARGUMENT;
+    }
+    if(!set->first) {
+        return addAtInit(set, element);
+    }
+    if(strcmp(element, set->first->element) < 0){
+        return addAtBeginning(set, element);
+    }
+    Node iterator = *set->first;
+    for(; iterator.next && strcmp(element, iterator.next->element) > 0; iterator = *iterator.next);
+    if(!iterator.next){
+        return addAtEnd(iterator, element);
+    }
+    return addAfterCurrentNode(iterator, element);
 
 }
 
-AmountSetResult asDelete(AmountSet set, ASElement element)
-{
-
-}
-
-AmountSetResult asClear(AmountSet set)
-{
-
-}
-
+//AmountSetResult asChangeAmount(AmountSet set, const char* element, double amount)
+//{
+//
+//}
+//
+//AmountSetResult asDelete(AmountSet set, const char* element)
+//{
+//
+//}
+//
+//AmountSetResult asClear(AmountSet set)
+//{
+//
+//}
+//
 char* asGetFirst(AmountSet set)
 {
-
+    if(!set || !set->first){
+        return NULL;
+    }
+    set->currentIteration = set->first;
+    return set->first->element;
 }
 
 char* asGetNext(AmountSet set)
 {
+    if(!set || !set->currentIteration || !set->currentIteration->next){
+        return NULL;
+    }
+    set->currentIteration = set->currentIteration->next;
+    return set->currentIteration->element;
 
+}
+
+int main(int argc, char** a){
+    return 0;
 }

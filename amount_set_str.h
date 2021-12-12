@@ -103,7 +103,7 @@ bool asContains(AmountSet set, const char* element);
 /**
  * asGetAmount: Returns the amount of an element in the set.
  *
- * The function returns an error code indicating wether the operation succeeded,
+ * The function returns an error code indicating whether the operation succeeded,
  * and in case of success also returns the element's amount via the outAmount
  * pointer.
  * Iterator's state is unchanged after this operation.
