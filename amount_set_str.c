@@ -27,6 +27,7 @@ AmountSet asCreate()
         return NULL;
     }
     amountSet->first = NULL;
+    amountSet->length = 0;
     return amountSet;
 }
 
@@ -265,5 +266,4 @@ char* asGetNext(AmountSet set)
     }
     set->currentIteration = set->currentIteration->next;
     return set->currentIteration->element;
-
 }
