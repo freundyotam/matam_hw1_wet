@@ -3,10 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define NOT_FOUND -1
-#define FOUND 0
-
-
 typedef struct Node {
     struct Node* next;
     char* element;
@@ -203,3 +199,5 @@ char* asGetNext(AmountSet set)
     return set->currentIteration->element;
 }
 // TODO Add undefined the current iterator for all functions that makes it undefined
+// TODO Turn stuff into static methods
+// TODO Add Tests
