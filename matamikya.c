@@ -52,6 +52,15 @@ int compareProducts(Product* product1, Product* product2){
     return product1->id > product2->id ? OBJECT1_BIGGER : OBJECT2_BIGGER;
 }
 
+Product* getProductById(AmountSet amountSet, const unsigned int id){
+    AS_FOREACH(Product*, iterator, amountSet){
+        if(iterator->id == id){
+            return iterator;
+        }
+    }
+    return NULL;
+}
+
 // ---end---
 // ---Order functions---
 Order* copyOrder(Order* order){
@@ -75,6 +84,10 @@ int orderCompare(Order* order1, Order* order2){
     }
     return order1->id > order2->id ? OBJECT1_BIGGER : OBJECT2_BIGGER;
 }
+
+bool isAmountInvalid(const double amount, MatamikyaAmountType set){
+    return false;
+}
 // --- end order function----
 
 Matamikya matamikyaCreate(){
@@ -83,7 +96,7 @@ Matamikya matamikyaCreate(){
         return NULL;
     }
     matamikya->items = asCreate((void* (*)(void *))copyProduct, (void (*)(void *))freeProduct,
-                                (int (*)(void*, void*))compareProducts); // How do I use this??
+                                (int (*)(void*, void*))compareProducts);
     matamikya->orders = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
                                                                                 (int (*)(void*, void*))orderCompare);
     return matamikya;
@@ -110,10 +123,13 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
                                                                             || ('0' <= name[0] && name[0] <= '9'))){
         return MATAMIKYA_INVALID_NAME;
     }
-    if(amount < 0){ //TODO check if amount type is compatible with amount
+    if(amount < 0 || isAmountInvalid(amount, )){ //TODO check if amount type is compatible with amount
         return MATAMIKYA_INVALID_AMOUNT;
     }
     Product* newProduct = (Product*) malloc(sizeof(Product));
+    if (newProduct == NULL){
+        return MATAMIKYA_OUT_OF_MEMORY;
+    }
     newProduct->id = id;
     strcpy(newProduct->name, name);
     newProduct->productData = copyData(customData);
@@ -131,6 +147,37 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
     }
     return MATAMIKYA_SUCCESS;
 }
+
+MatamikyaResult mtmChangeProductAmount(Matamikya matamikya, const unsigned int id, const double amount){
+    if(!matamikya){
+        return MATAMIKYA_NULL_ARGUMENT;
+    }
+    Product* product = getProductById(matamikya->items, id);
+    if (product == NULL){
+        return MATAMIKYA_PRODUCT_NOT_EXIST;
+    }
+    if (isAmountInvalid(amount, product->amountType)){
+        return MATAMIKYA_INVALID_AMOUNT;
+    }
+    AmountSetResult result = asChangeAmount(matamikya->items, product, amount);
+    if(result == AS_INSUFFICIENT_AMOUNT){
+        return MATAMIKYA_INSUFFICIENT_AMOUNT;
+    }
+    return MATAMIKYA_SUCCESS;
+}
+
+MatamikyaResult mtmClearProduct(Matamikya matamikya, const unsigned int id){
+    if(!matamikya){
+        return MATAMIKYA_NULL_ARGUMENT;
+    }
+    Product* product = getProductById(matamikya->items, id);
+    if(product == NULL){
+        return MATAMIKYA_PRODUCT_NOT_EXIST;
+    }
+    asDelete(matamikya->items,product);
+    return MATAMIKYA_SUCCESS;
+}
+
 
 int main(int argc, char** argv){
     Set s = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
