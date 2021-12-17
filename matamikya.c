@@ -91,6 +91,24 @@ void matamikyaDestroy(Matamikya matamikya){
     free(matamikya);
 }
 
+MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const char *name,
+                              const double amount, const MatamikyaAmountType amountType,
+                              const MtmProductData customData, MtmCopyData copyData,
+                              MtmFreeData freeData, MtmGetProductPrice prodPrice){
+
+    Product* newProduct = (Product*) malloc(sizeof(Product));
+    newProduct->id = id;
+    strcpy(newProduct->name, name);
+    newProduct->productData = copyData(customData);
+    newProduct->freeDataFunction = freeData;
+    newProduct->copyDataFunction = copyData;
+    newProduct->amountType = amountType;
+    newProduct->prodPriceFunction = prodPrice;
+    asRegister(matamikya->items, newProduct);
+    asChangeAmount(matamikya->items, newProduct, amount);
+    return MATAMIKYA_SUCCESS;
+}
+
 int main(int argc, char** argv){
     Set s = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
               (int (*)(void*, void*))orderCompare);
