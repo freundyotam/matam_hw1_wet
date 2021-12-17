@@ -1,5 +1,4 @@
 #include "set.h"
-#include "list.h"
 #include "matamikya.h"
 #include "amount_set.h"
 #include <stdio.h>
@@ -63,6 +62,9 @@ Order* copyOrder(Order* order){
 }
 
 void orderFree(Order* order){
+    if(order==NULL){
+        return;
+    }
     asDestroy(order->items);
     free(order);
 }
@@ -83,6 +85,16 @@ Matamikya matamikyaCreate(){
                                                                                 (int (*)(void*, void*))orderCompare);
     return matamikya;
 }
+void matamikyaDestroy(Matamikya matamikya){
+    setDestroy(matamikya->orders);
+    asDestroy(matamikya->items);
+    free(matamikya);
+}
+
 int main(int argc, char** argv){
+    Set s = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
+              (int (*)(void*, void*))orderCompare);
+
+    setDestroy(s);
     return 0;
 }
