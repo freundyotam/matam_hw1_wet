@@ -217,17 +217,57 @@ MatamikyaResult mtmChangeProductAmountInOrder(Matamikya matamikya, const unsigne
         return MATAMIKYA_NULL_ARGUMENT;
     }
     Order* order = getOrderById(matamikya->orders, orderId);
-    if (order == NULL){
+    if (!order){
         return MATAMIKYA_ORDER_NOT_EXIST;
     }
-    Product* product = getProductById(order->items, productId);
-    if (product == NULL){
+    Product* product = getProductById(matamikya->items, productId);
+    if(!product){
         return MATAMIKYA_PRODUCT_NOT_EXIST;
     }
-    if(isAmountInvalid(amount, product->amountType) ||
-                                            asChangeAmount(order->items, product, amount) == MATAMIKYA_INVALID_AMOUNT){
+    if(isAmountInvalid(amount, product->amountType)){
         return MATAMIKYA_INVALID_AMOUNT;
     }
+
+    product = getProductById(order->items, productId);
+    if(product){ // Product exists in the order
+        AmountSetResult result = asChangeAmount(order->items, product, amount);
+        if (result == AS_INSUFFICIENT_AMOUNT){
+            asDelete(order->items, product);
+        }
+    } else { // product not in the order
+        product = getProductById(matamikya->items, productId);
+        if (amount < 0){
+            return MATAMIKYA_INSUFFICIENT_AMOUNT;
+        }
+        asRegister(order->items, product);
+        asChangeAmount(order->items, product, amount);
+    }
+    return MATAMIKYA_SUCCESS;
+}
+
+MatamikyaResult mtmShipOrder(Matamikya matamikya, const unsigned int orderId){
+    if(!matamikya){
+        return MATAMIKYA_NULL_ARGUMENT;
+    }
+    Order* order = getOrderById(matamikya->orders, orderId);
+    if (!order){
+        return MATAMIKYA_ORDER_NOT_EXIST;
+    }
+    AS_FOREACH(Product*, iterator, order->items){
+        double amountInOrder;
+        double amountInMatamikya;
+        asGetAmount(order->items, iterator, &amountInOrder);
+        asGetAmount(matamikya->items, iterator, &amountInMatamikya);
+        if(amountInOrder > amountInMatamikya){
+            return MATAMIKYA_INSUFFICIENT_AMOUNT;
+        }
+    }
+    AS_FOREACH(Product*, iterator, order->items){
+        double amountInOrder;
+        asGetAmount(order->items, iterator, &amountInOrder);
+        asChangeAmount(matamikya->items, iterator, -amountInOrder);
+    }
+    setRemove(matamikya->orders, getOrderById(matamikya->orders, orderId));
     return MATAMIKYA_SUCCESS;
 }
 int main(int argc, char** argv){
