@@ -79,13 +79,20 @@ int orderCompare(Order* order1, Order* order2){
 
 Matamikya matamikyaCreate(){
     Matamikya matamikya = (Matamikya) malloc(sizeof(Matamikya));
+    if(!matamikya){
+        return NULL;
+    }
     matamikya->items = asCreate((void* (*)(void *))copyProduct, (void (*)(void *))freeProduct,
                                 (int (*)(void*, void*))compareProducts); // How do I use this??
     matamikya->orders = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
                                                                                 (int (*)(void*, void*))orderCompare);
     return matamikya;
 }
+
 void matamikyaDestroy(Matamikya matamikya){
+    if(!matamikya){
+        return;
+    }
     setDestroy(matamikya->orders);
     asDestroy(matamikya->items);
     free(matamikya);
@@ -96,6 +103,16 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
                               const MtmProductData customData, MtmCopyData copyData,
                               MtmFreeData freeData, MtmGetProductPrice prodPrice){
 
+    if(!(matamikya && name && customData && copyData && freeData)){
+        return MATAMIKYA_NULL_ARGUMENT;
+    }
+    if(!(('a' <= name[0] && name[0] <= 'z') || ('A' <= name[0] && name[0] <= 'Z')
+                                                                            || ('0' <= name[0] && name[0] <= '9'))){
+        return MATAMIKYA_INVALID_NAME;
+    }
+    if(amount < 0){ //TODO check if amount type is compatible with amount
+        return MATAMIKYA_INVALID_AMOUNT;
+    }
     Product* newProduct = (Product*) malloc(sizeof(Product));
     newProduct->id = id;
     strcpy(newProduct->name, name);
@@ -104,8 +121,14 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
     newProduct->copyDataFunction = copyData;
     newProduct->amountType = amountType;
     newProduct->prodPriceFunction = prodPrice;
-    asRegister(matamikya->items, newProduct);
-    asChangeAmount(matamikya->items, newProduct, amount);
+    AmountSetResult registerResult = asRegister(matamikya->items, newProduct);
+    if(registerResult == AS_ITEM_ALREADY_EXISTS){
+        return MATAMIKYA_PRODUCT_ALREADY_EXIST;
+    }
+    AmountSetResult changeAmountResult = asChangeAmount(matamikya->items, newProduct, amount);
+    if(changeAmountResult == AS_INSUFFICIENT_AMOUNT){
+        return MATAMIKYA_INVALID_AMOUNT;
+    }
     return MATAMIKYA_SUCCESS;
 }
 
