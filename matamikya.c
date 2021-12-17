@@ -266,10 +266,25 @@ MatamikyaResult mtmShipOrder(Matamikya matamikya, const unsigned int orderId){
         double amountInOrder;
         asGetAmount(order->items, iterator, &amountInOrder);
         asChangeAmount(matamikya->items, iterator, -amountInOrder);
+        //TODO ADD THE REVENUE FROM THE PRODUCTS
     }
     setRemove(matamikya->orders, getOrderById(matamikya->orders, orderId));
+
     return MATAMIKYA_SUCCESS;
 }
+
+MatamikyaResult mtmCancelOrder(Matamikya matamikya, const unsigned int orderId){
+    if (!matamikya){
+        return MATAMIKYA_NULL_ARGUMENT;
+    }
+    Order* order = getOrderById(matamikya->orders,orderId);
+    if (order == NULL){
+        return MATAMIKYA_ORDER_NOT_EXIST;
+    }
+    setRemove(matamikya->orders, order);
+    return MATAMIKYA_SUCCESS;
+}
+
 int main(int argc, char** argv){
     Set s = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
               (int (*)(void*, void*))orderCompare);
