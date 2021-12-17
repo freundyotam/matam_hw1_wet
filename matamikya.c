@@ -11,7 +11,8 @@
 
 struct Matamikya_t{
     AmountSet items;
-    Set orders; // The items are amountset
+    Set orders;
+    int ordersIndex;// The items are amountset
 };
 
 typedef struct {
@@ -85,6 +86,15 @@ int orderCompare(Order* order1, Order* order2){
     return order1->id > order2->id ? OBJECT1_BIGGER : OBJECT2_BIGGER;
 }
 
+Order* getOrderById(Set orders, const unsigned int orderId){
+    SET_FOREACH(Order*, iterator, orders){
+        if(iterator->id == orderId){
+            return iterator;
+        }
+    }
+    return NULL;
+}
+
 bool isAmountInvalid(const double amount, MatamikyaAmountType set){
     return false;
 }
@@ -99,6 +109,7 @@ Matamikya matamikyaCreate(){
                                 (int (*)(void*, void*))compareProducts);
     matamikya->orders = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
                                                                                 (int (*)(void*, void*))orderCompare);
+    matamikya->orders = 0;
     return matamikya;
 }
 
@@ -123,7 +134,7 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
                                                                             || ('0' <= name[0] && name[0] <= '9'))){
         return MATAMIKYA_INVALID_NAME;
     }
-    if(amount < 0 || isAmountInvalid(amount, )){ //TODO check if amount type is compatible with amount
+    if(amount < 0 || isAmountInvalid(amount, amountType)){ //TODO check if amount type is compatible with amount
         return MATAMIKYA_INVALID_AMOUNT;
     }
     Product* newProduct = (Product*) malloc(sizeof(Product));
@@ -178,7 +189,47 @@ MatamikyaResult mtmClearProduct(Matamikya matamikya, const unsigned int id){
     return MATAMIKYA_SUCCESS;
 }
 
+unsigned int mtmCreateNewOrder(Matamikya matamikya){
+    if(!matamikya){
+        return 0;
+    }
+    Order* order = (Order*) malloc(sizeof(order));
+    if (order == NULL){
+        return 0;
+    }
+    order->id = ++matamikya->ordersIndex;
+    order->revenue = 0;
+    order->items = asCreate((void* (*)(void *))copyProduct, (void (*)(void *))freeProduct,
+                            (int (*)(void*, void*))compareProducts);
+    if(!order->items){
+        return 0;
+    }
+    SetResult result = setAdd(matamikya->orders, order);
+    if(result != SET_SUCCESS){
+        return 0;
+    }
+    return matamikya->ordersIndex;
+}
 
+MatamikyaResult mtmChangeProductAmountInOrder(Matamikya matamikya, const unsigned int orderId,
+                                              const unsigned int productId, const double amount){
+    if(!matamikya){
+        return MATAMIKYA_NULL_ARGUMENT;
+    }
+    Order* order = getOrderById(matamikya->orders, orderId);
+    if (order == NULL){
+        return MATAMIKYA_ORDER_NOT_EXIST;
+    }
+    Product* product = getProductById(order->items, productId);
+    if (product == NULL){
+        return MATAMIKYA_PRODUCT_NOT_EXIST;
+    }
+    if(isAmountInvalid(amount, product->amountType) ||
+                                            asChangeAmount(order->items, product, amount) == MATAMIKYA_INVALID_AMOUNT){
+        return MATAMIKYA_INVALID_AMOUNT;
+    }
+    return MATAMIKYA_SUCCESS;
+}
 int main(int argc, char** argv){
     Set s = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
               (int (*)(void*, void*))orderCompare);
