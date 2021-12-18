@@ -18,7 +18,7 @@ struct AmountSet_t {
 
 AmountSet asCreate()
 {
-    AmountSet amountSet = (AmountSet) malloc(sizeof(AmountSet));
+    AmountSet amountSet = (AmountSet) malloc(sizeof(*amountSet));
     if(amountSet == NULL){
         return NULL;
     }

@@ -10,7 +10,7 @@
 #define OBJECT1_BIGGER 1
 #define OBJECT2_BIGGER -1
 #define OBJECTS_EQUAL 0
-#define HEAD_LINE_INVENTORY_STATUS "Inventory Status:"
+#define HEAD_LINE_INVENTORY_STATUS "Inventory Status:\n"
 #define NO_PRODUCT_SOLD "Best Selling Product:\nnone"
 #define BEST_SELLING_PRODUCT_HEADER "Best Selling Product:"
 
@@ -19,7 +19,6 @@ struct Matamikya_t{
     Set orders;
     int ordersIndex;// The items are amountset
 };
-
 
 typedef struct {
     AmountSet items;
@@ -50,6 +49,7 @@ Product* copyProduct(Product* product){
 
 void freeProduct(Product* product){
     product->freeDataFunction(product->productData);
+    free(product->name);
     free(product);
 }
 
@@ -107,14 +107,14 @@ bool isAmountInvalid(const double amount, MatamikyaAmountType type){
         return (amount - ((int) amount)) > 0.001 && (amount - ((int) amount)) < 0.999;
     }
     if(type == MATAMIKYA_HALF_INTEGER_AMOUNT){
-        return 2*(amount - ((int) amount)) > 0.002 && 2*(amount - ((int) amount)) < 0.998;
+        return (2*amount - ((int) (2*amount)) > 0.002 && (2*amount - ((int) (2*amount))) < 0.998);
     }
     return false;
 }
 // --- end order function----
 
 Matamikya matamikyaCreate(){
-    Matamikya matamikya = (Matamikya) malloc(sizeof(Matamikya));
+    Matamikya matamikya = (Matamikya) malloc(sizeof(*matamikya));
     if(!matamikya){
         return NULL;
     }
@@ -122,7 +122,7 @@ Matamikya matamikyaCreate(){
                                 (int (*)(void*, void*))compareProducts);
     matamikya->orders = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
                                                                                 (int (*)(void*, void*))orderCompare);
-    matamikya->orders = 0;
+    matamikya->ordersIndex = 0;
     return matamikya;
 }
 
@@ -133,6 +133,20 @@ void matamikyaDestroy(Matamikya matamikya){
     setDestroy(matamikya->orders);
     asDestroy(matamikya->items);
     free(matamikya);
+}
+
+void initProduct(const unsigned int id, const char *name, const MatamikyaAmountType *amountType, const MtmProductData customData,
+                 MtmCopyData copyData, MtmFreeData freeData, MtmGetProductPrice prodPrice, Product *newProduct)
+{
+    newProduct->id = id;
+    newProduct->name = (char*) malloc(strlen(name) + 1);
+    strcpy(newProduct->name, name);
+    newProduct->productData = copyData(customData);
+    newProduct->freeDataFunction = freeData;
+    newProduct->copyDataFunction = copyData;
+    newProduct->amountType = (*amountType);
+    newProduct->prodPriceFunction = prodPrice;
+    newProduct->totalRevenue = 0;
 }
 
 MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const char *name,
@@ -147,21 +161,14 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
                                                                             || ('0' <= name[0] && name[0] <= '9'))){
         return MATAMIKYA_INVALID_NAME;
     }
-    if(amount < 0 || isAmountInvalid(amount, amountType)){ //TODO check if amount type is compatible with amount
+    if(amount < 0 || isAmountInvalid(amount, amountType)){
         return MATAMIKYA_INVALID_AMOUNT;
     }
     Product* newProduct = (Product*) malloc(sizeof(Product));
     if (newProduct == NULL){
         return MATAMIKYA_OUT_OF_MEMORY;
     }
-    newProduct->id = id;
-    strcpy(newProduct->name, name);
-    newProduct->productData = copyData(customData);
-    newProduct->freeDataFunction = freeData;
-    newProduct->copyDataFunction = copyData;
-    newProduct->amountType = amountType;
-    newProduct->prodPriceFunction = prodPrice;
-    newProduct->totalRevenue = 0;
+    initProduct(id, name, &amountType, customData, copyData, freeData, prodPrice, newProduct);
     AmountSetResult registerResult = asRegister(matamikya->items, newProduct);
     if(registerResult == AS_ITEM_ALREADY_EXISTS){
         return MATAMIKYA_PRODUCT_ALREADY_EXIST;
@@ -216,12 +223,15 @@ unsigned int mtmCreateNewOrder(Matamikya matamikya){
     order->items = asCreate((void* (*)(void *))copyProduct, (void (*)(void *))freeProduct,
                             (int (*)(void*, void*))compareProducts);
     if(!order->items){
+        printf("ret here1");
         return 0;
     }
     SetResult result = setAdd(matamikya->orders, order);
     if(result != SET_SUCCESS){
+        printf("ret here2 %d", result);
         return 0;
     }
+
     return matamikya->ordersIndex;
 }
 
@@ -368,12 +378,4 @@ MatamikyaResult mtmPrintBestSelling(Matamikya matamikya, FILE *output){
     fprintf(output, BEST_SELLING_PRODUCT_HEADER);
     mtmPrintIncomeLine(bestSelling->name, bestSelling->id, bestSelling->totalRevenue, output);
     return MATAMIKYA_SUCCESS;
-}
-
-int main(int argc, char** argv){
-    Set s = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
-              (int (*)(void*, void*))orderCompare);
-
-    setDestroy(s);
-    return 0;
 }
