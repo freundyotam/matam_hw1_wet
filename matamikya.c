@@ -102,8 +102,16 @@ Order* getOrderById(Set orders, const unsigned int orderId){
     return NULL;
 }
 
-bool isAmountInvalid(const double amount, MatamikyaAmountType set){
-    return false;
+bool isAmountInvalid(const double amount, MatamikyaAmountType type){
+    if(type == MATAMIKYA_INTEGER_AMOUNT){
+        return (amount - ((int) amount)) > 0.001 && (amount - ((int) amount)) < 0.999;
+    }
+    if(type == MATAMIKYA_HALF_INTEGER_AMOUNT){
+        return 2*(amount - ((int) amount)) > 0.002 && 2*(amount - ((int) amount)) < 0.998;
+    }
+    if(type == MATAMIKYA_ANY_AMOUNT){
+        return false;
+    }
 }
 // --- end order function----
 
