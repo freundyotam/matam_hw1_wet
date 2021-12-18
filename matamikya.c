@@ -41,8 +41,14 @@ typedef struct {
 // Product functions for amount set
 Product* copyProduct(Product* product){
     Product* copy = (Product*) malloc(sizeof(Product));
-    *copy = *product;
+    copy->id = product->id; // Why not *copy = *product then copying memory stuff manually
+    copy->prodPriceFunction = product->prodPriceFunction;
+    copy->totalRevenue = product->totalRevenue;
+    copy->amountType = product->amountType;
+    copy->copyDataFunction = product->copyDataFunction;
+    copy->freeDataFunction = product->freeDataFunction;
     copy->productData = product->copyDataFunction(product->productData);
+    copy->name = (char*) malloc(strlen(product->name) + 1);
     strcpy(copy->name, product->name);
     return copy;
 }
@@ -135,25 +141,29 @@ void matamikyaDestroy(Matamikya matamikya){
     free(matamikya);
 }
 
-void initProduct(const unsigned int id, const char *name, const MatamikyaAmountType *amountType, const MtmProductData customData,
-                 MtmCopyData copyData, MtmFreeData freeData, MtmGetProductPrice prodPrice, Product *newProduct)
+Product* initProduct(const unsigned int id, const char *name, const MatamikyaAmountType *amountType, const MtmProductData customData,
+                 MtmCopyData copyData, MtmFreeData freeData, MtmGetProductPrice prodPrice)
 {
+    Product* newProduct = (Product*) malloc(sizeof(Product));
+    if (newProduct == NULL){
+        return NULL;
+    }
     newProduct->id = id;
     newProduct->name = (char*) malloc(strlen(name) + 1);
     strcpy(newProduct->name, name);
     newProduct->productData = copyData(customData);
     newProduct->freeDataFunction = freeData;
     newProduct->copyDataFunction = copyData;
-    newProduct->amountType = (*amountType);
+    newProduct->amountType = *amountType;
     newProduct->prodPriceFunction = prodPrice;
     newProduct->totalRevenue = 0;
+    return newProduct;
 }
 
 MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const char *name,
                               const double amount, const MatamikyaAmountType amountType,
                               const MtmProductData customData, MtmCopyData copyData,
                               MtmFreeData freeData, MtmGetProductPrice prodPrice){
-
     if(!(matamikya && name && customData && copyData && freeData)){
         return MATAMIKYA_NULL_ARGUMENT;
     }
@@ -164,11 +174,10 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
     if(amount < 0 || isAmountInvalid(amount, amountType)){
         return MATAMIKYA_INVALID_AMOUNT;
     }
-    Product* newProduct = (Product*) malloc(sizeof(Product));
+    Product* newProduct = initProduct(id, name, &amountType, customData, copyData, freeData, prodPrice);
     if (newProduct == NULL){
         return MATAMIKYA_OUT_OF_MEMORY;
     }
-    initProduct(id, name, &amountType, customData, copyData, freeData, prodPrice, newProduct);
     AmountSetResult registerResult = asRegister(matamikya->items, newProduct);
     if(registerResult == AS_ITEM_ALREADY_EXISTS){
         return MATAMIKYA_PRODUCT_ALREADY_EXIST;
@@ -366,7 +375,7 @@ MatamikyaResult mtmPrintBestSelling(Matamikya matamikya, FILE *output){
         return MATAMIKYA_NULL_ARGUMENT;
     }
     if(asGetSize(matamikya->items) == 0){
-        fprintf(output,NO_PRODUCT_SOLD);
+        fprintf(output, NO_PRODUCT_SOLD);
         return MATAMIKYA_SUCCESS;
     }
     Product* bestSelling = asGetFirst(matamikya->items);
@@ -374,6 +383,10 @@ MatamikyaResult mtmPrintBestSelling(Matamikya matamikya, FILE *output){
         if(iterator->totalRevenue > bestSelling->totalRevenue){
             bestSelling = iterator;
         }
+    }
+    if(bestSelling->totalRevenue == 0){
+        fprintf(output, NO_PRODUCT_SOLD);
+        return MATAMIKYA_SUCCESS;
     }
     fprintf(output, BEST_SELLING_PRODUCT_HEADER);
     mtmPrintIncomeLine(bestSelling->name, bestSelling->id, bestSelling->totalRevenue, output);
