@@ -1,19 +1,23 @@
 #include "set.h"
 #include "matamikya.h"
 #include "amount_set.h"
+#include "matamikya_print.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#define ONE_UNIT 1
 #define OBJECT1_BIGGER 1
 #define OBJECT2_BIGGER -1
 #define OBJECTS_EQUAL 0
+#define HEAD_LINE_INVENTORY_STATUS "Inventory Status:"
 
 struct Matamikya_t{
     AmountSet items;
     Set orders;
     int ordersIndex;// The items are amountset
 };
+
 
 typedef struct {
     AmountSet items;
@@ -24,6 +28,7 @@ typedef struct {
 typedef struct {
     unsigned int id;
     char* name;
+    double totalRevenue;
     MatamikyaAmountType amountType;
     MtmProductData productData;
     MtmCopyData copyDataFunction;
@@ -148,6 +153,7 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
     newProduct->copyDataFunction = copyData;
     newProduct->amountType = amountType;
     newProduct->prodPriceFunction = prodPrice;
+    newProduct->totalRevenue = 0;
     AmountSetResult registerResult = asRegister(matamikya->items, newProduct);
     if(registerResult == AS_ITEM_ALREADY_EXISTS){
         return MATAMIKYA_PRODUCT_ALREADY_EXIST;
@@ -193,7 +199,7 @@ unsigned int mtmCreateNewOrder(Matamikya matamikya){
     if(!matamikya){
         return 0;
     }
-    Order* order = (Order*) malloc(sizeof(order));
+    Order* order = (Order*) malloc(sizeof(Order));
     if (order == NULL){
         return 0;
     }
@@ -209,6 +215,32 @@ unsigned int mtmCreateNewOrder(Matamikya matamikya){
         return 0;
     }
     return matamikya->ordersIndex;
+}
+
+void addNewProductToOrder(Matamikya matamikya, const unsigned int productId, const double amount,
+                          Order *order, Product *product)
+{
+    product = getProductById(matamikya->items, productId);
+    asRegister(order->items, product);
+    asChangeAmount(order->items, product, amount);
+    order->revenue += product->prodPriceFunction(product->productData, amount);
+}
+
+void changeExistingInOrderProduct(const double amount, Order *order, Product *product)
+{
+    double currentAmount;
+    asGetAmount(order->items, product, &currentAmount);
+    if(currentAmount + amount < 0){
+        asDelete(order->items, product);
+        order->revenue -= product->prodPriceFunction(product->productData, currentAmount);
+    } else {
+        asChangeAmount(order->items, product, amount);
+        if(amount < 0){
+            order->revenue -= product->prodPriceFunction(product->productData, -amount);
+        } else {
+            order->revenue += product->prodPriceFunction(product->productData, amount);
+        }
+    }
 }
 
 MatamikyaResult mtmChangeProductAmountInOrder(Matamikya matamikya, const unsigned int orderId,
@@ -227,20 +259,14 @@ MatamikyaResult mtmChangeProductAmountInOrder(Matamikya matamikya, const unsigne
     if(isAmountInvalid(amount, product->amountType)){
         return MATAMIKYA_INVALID_AMOUNT;
     }
-
     product = getProductById(order->items, productId);
     if(product){ // Product exists in the order
-        AmountSetResult result = asChangeAmount(order->items, product, amount);
-        if (result == AS_INSUFFICIENT_AMOUNT){
-            asDelete(order->items, product);
-        }
+        changeExistingInOrderProduct(amount, order, product);
     } else { // product not in the order
-        product = getProductById(matamikya->items, productId);
         if (amount < 0){
             return MATAMIKYA_INSUFFICIENT_AMOUNT;
         }
-        asRegister(order->items, product);
-        asChangeAmount(order->items, product, amount);
+        addNewProductToOrder(matamikya, productId, amount, order, product);
     }
     return MATAMIKYA_SUCCESS;
 }
@@ -266,10 +292,9 @@ MatamikyaResult mtmShipOrder(Matamikya matamikya, const unsigned int orderId){
         double amountInOrder;
         asGetAmount(order->items, iterator, &amountInOrder);
         asChangeAmount(matamikya->items, iterator, -amountInOrder);
-        //TODO ADD THE REVENUE FROM THE PRODUCTS
+        iterator->totalRevenue += iterator->prodPriceFunction(iterator->productData, amountInOrder);
     }
     setRemove(matamikya->orders, getOrderById(matamikya->orders, orderId));
-
     return MATAMIKYA_SUCCESS;
 }
 
@@ -282,6 +307,21 @@ MatamikyaResult mtmCancelOrder(Matamikya matamikya, const unsigned int orderId){
         return MATAMIKYA_ORDER_NOT_EXIST;
     }
     setRemove(matamikya->orders, order);
+    return MATAMIKYA_SUCCESS;
+}
+
+MatamikyaResult mtmPrintInventory(Matamikya matamikya, FILE *output){
+    if(!matamikya || !output){
+        return MATAMIKYA_NULL_ARGUMENT;
+    }
+    fputs(HEAD_LINE_INVENTORY_STATUS, output);
+    AS_FOREACH(Product*, iterator, matamikya->items){
+        double amount;
+        asGetAmount(matamikya->items, iterator, &amount);
+        mtmPrintProductDetails(iterator->name, iterator->id, amount,
+                                            iterator->prodPriceFunction(iterator->productData, ONE_UNIT), output);
+    }
+    fclose(output);
     return MATAMIKYA_SUCCESS;
 }
 
