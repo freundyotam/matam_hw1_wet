@@ -109,9 +109,7 @@ bool isAmountInvalid(const double amount, MatamikyaAmountType type){
     if(type == MATAMIKYA_HALF_INTEGER_AMOUNT){
         return 2*(amount - ((int) amount)) > 0.002 && 2*(amount - ((int) amount)) < 0.998;
     }
-    if(type == MATAMIKYA_ANY_AMOUNT){
-        return false;
-    }
+    return false;
 }
 // --- end order function----
 
