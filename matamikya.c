@@ -11,6 +11,8 @@
 #define OBJECT2_BIGGER -1
 #define OBJECTS_EQUAL 0
 #define HEAD_LINE_INVENTORY_STATUS "Inventory Status:"
+#define NO_PRODUCT_SOLD "Best Selling Product:\nnone"
+#define BEST_SELLING_PRODUCT_HEADER "Best Selling Product:"
 
 struct Matamikya_t{
     AmountSet items;
@@ -302,7 +304,7 @@ MatamikyaResult mtmCancelOrder(Matamikya matamikya, const unsigned int orderId){
     if (!matamikya){
         return MATAMIKYA_NULL_ARGUMENT;
     }
-    Order* order = getOrderById(matamikya->orders,orderId);
+    Order* order = getOrderById(matamikya->orders, orderId);
     if (order == NULL){
         return MATAMIKYA_ORDER_NOT_EXIST;
     }
@@ -321,7 +323,44 @@ MatamikyaResult mtmPrintInventory(Matamikya matamikya, FILE *output){
         mtmPrintProductDetails(iterator->name, iterator->id, amount,
                                             iterator->prodPriceFunction(iterator->productData, ONE_UNIT), output);
     }
-    fclose(output);
+    return MATAMIKYA_SUCCESS;
+}
+
+MatamikyaResult mtmPrintOrder(Matamikya matamikya, const unsigned int orderId, FILE *output){
+    if(!matamikya || !output){
+        return MATAMIKYA_NULL_ARGUMENT;
+    }
+    Order* order = getOrderById(matamikya->orders, orderId);
+    if(!order){
+        return MATAMIKYA_ORDER_NOT_EXIST;
+    }
+    mtmPrintOrderHeading(orderId, output);
+    AS_FOREACH(Product*, iterator, order->items){
+        double amount;
+        asGetAmount(order->items, iterator, &amount);
+        mtmPrintProductDetails(iterator->name, iterator->id, amount,
+                                                    iterator->prodPriceFunction(iterator->productData, amount), output);
+    }
+    mtmPrintOrderSummary(order->revenue, output);
+    return MATAMIKYA_SUCCESS;
+}
+
+MatamikyaResult mtmPrintBestSelling(Matamikya matamikya, FILE *output){
+    if(!matamikya){
+        return MATAMIKYA_NULL_ARGUMENT;
+    }
+    if(asGetSize(matamikya->items) == 0){
+        fprintf(output,NO_PRODUCT_SOLD);
+        return MATAMIKYA_SUCCESS;
+    }
+    Product* bestSelling = asGetFirst(matamikya->items);
+    AS_FOREACH(Product*, iterator, matamikya->items){
+        if(iterator->totalRevenue > bestSelling->totalRevenue){
+            bestSelling = iterator;
+        }
+    }
+    fprintf(output, BEST_SELLING_PRODUCT_HEADER);
+    mtmPrintIncomeLine(bestSelling->name, bestSelling->id, bestSelling->totalRevenue, output);
     return MATAMIKYA_SUCCESS;
 }
 
