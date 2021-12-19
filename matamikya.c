@@ -232,12 +232,10 @@ unsigned int mtmCreateNewOrder(Matamikya matamikya){
     order->items = asCreate((void* (*)(void *))copyProduct, (void (*)(void *))freeProduct,
                             (int (*)(void*, void*))compareProducts);
     if(!order->items){
-        printf("ret here1");
         return 0;
     }
     SetResult result = setAdd(matamikya->orders, order);
     if(result != SET_SUCCESS){
-        printf("ret here2 %d", result);
         return 0;
     }
 
@@ -319,7 +317,9 @@ MatamikyaResult mtmShipOrder(Matamikya matamikya, const unsigned int orderId){
         double amountInOrder;
         asGetAmount(order->items, iterator, &amountInOrder);
         asChangeAmount(matamikya->items, iterator, -amountInOrder);
-        iterator->totalRevenue += iterator->prodPriceFunction(iterator->productData, amountInOrder);
+        Product* warehouseProduct = getProductById(matamikya->items, iterator->id);
+        warehouseProduct->totalRevenue += warehouseProduct->prodPriceFunction(warehouseProduct->productData,
+                                                                                                        amountInOrder);
     }
     setRemove(matamikya->orders, getOrderById(matamikya->orders, orderId));
     return MATAMIKYA_SUCCESS;
@@ -384,7 +384,6 @@ MatamikyaResult mtmPrintBestSelling(Matamikya matamikya, FILE *output){
             bestSelling = iterator;
         }
     }
-    printf("found best selling product %s with %f revenue", bestSelling->name, bestSelling->totalRevenue);
     if(bestSelling->totalRevenue == 0){
         fprintf(output, "%s", NO_PRODUCT_SOLD);
         return MATAMIKYA_SUCCESS;
