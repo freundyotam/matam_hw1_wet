@@ -6,7 +6,7 @@
 typedef struct Node {
     struct Node* next;
     char* element;
-    int amount;
+    double amount;
 } Node;
 
 
@@ -198,6 +198,3 @@ char* asGetNext(AmountSet set)
     set->currentIteration = set->currentIteration->next;
     return set->currentIteration->element;
 }
-// TODO Add undefined the current iterator for all functions that makes it undefined
-// TODO Turn stuff into static methods
-// TODO Add Tests

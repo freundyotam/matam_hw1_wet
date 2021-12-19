@@ -17,7 +17,7 @@
 struct Matamikya_t{
     AmountSet items;
     Set orders;
-    int ordersIndex;// The items are amountset
+    int ordersIndex;
 };
 
 typedef struct {
@@ -37,10 +37,21 @@ typedef struct {
     MtmGetProductPrice prodPriceFunction;
 } Product;
 
+void freeProduct(Product* product){
+    if(!product){
+        return;
+    }
+    product->freeDataFunction(product->productData);
+    free(product->name);
+    free(product);
+}
 
 // Product functions for amount set
 Product* copyProduct(Product* product){
     Product* copy = (Product*) malloc(sizeof(Product));
+    if (copy == NULL){
+        return NULL;
+    }
     copy->id = product->id; // Why not *copy = *product then copying memory stuff manually
     copy->prodPriceFunction = product->prodPriceFunction;
     copy->totalRevenue = product->totalRevenue;
@@ -49,15 +60,12 @@ Product* copyProduct(Product* product){
     copy->freeDataFunction = product->freeDataFunction;
     copy->productData = product->copyDataFunction(product->productData);
     copy->name = (char*) malloc(strlen(product->name) + 1);
+    if (copy->name == NULL){
+        freeProduct(product);
+        return NULL;
+    }
     strcpy(copy->name, product->name);
     return copy;
-}
-
-void freeProduct(Product* product){
-    printf("free product is called with product %d\n", product->id);
-    product->freeDataFunction(product->productData);
-    free(product->name);
-    free(product);
 }
 
 int compareProducts(Product* product1, Product* product2){
@@ -127,8 +135,14 @@ Matamikya matamikyaCreate(){
     }
     matamikya->items = asCreate((void* (*)(void *))copyProduct, (void (*)(void *))freeProduct,
                                 (int (*)(void*, void*))compareProducts);
+    if(!matamikya->items){
+        return NULL;
+    }
     matamikya->orders = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
                                                                                 (int (*)(void*, void*))orderCompare);
+    if(!matamikya->orders){
+        return NULL;
+    }
     matamikya->ordersIndex = 0;
     return matamikya;
 }
@@ -150,8 +164,11 @@ Product* initProduct(const unsigned int id, const char *name, const MatamikyaAmo
         return NULL;
     }
     newProduct->id = id;
-    printf("Creating new product %d\n", newProduct->id);
     newProduct->name = (char*) malloc(strlen(name) + 1);
+    if(!newProduct->name){
+        freeProduct(newProduct);
+        return NULL;
+    }
     strcpy(newProduct->name, name);
     newProduct->productData = copyData(customData);
     newProduct->freeDataFunction = freeData;
@@ -193,7 +210,7 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
     freeProduct(newProduct);
     return MATAMIKYA_SUCCESS;
 }
-
+//TODO maybe amound is good but amount + oldAmount give value which is not good
 MatamikyaResult mtmChangeProductAmount(Matamikya matamikya, const unsigned int id, const double amount){
     if(!matamikya){
         return MATAMIKYA_NULL_ARGUMENT;
@@ -237,6 +254,7 @@ unsigned int mtmCreateNewOrder(Matamikya matamikya){
     order->items = asCreate((void* (*)(void *))copyProduct, (void (*)(void *))freeProduct,
                             (int (*)(void*, void*))compareProducts);
     if(!order->items){
+        orderFree(order);
         return 0;
     }
     SetResult result = setAdd(matamikya->orders, order);

@@ -3,7 +3,7 @@ OBJS=matamikya.o matamikya_main.o matamikya_tests.o amount_set_str.o matamikya_p
 EXEC=matamikya
 CFLAGS=-std=c99 -Wall -Werror -pedantic-errors
 ARCHIVE_FLAGS=-L. -lmtm -lm -las
-
+#TODO something in this compilation makes the test not pass
 $(EXEC) : $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) $(ARCHIVE_FLAGS) -o $@
 
