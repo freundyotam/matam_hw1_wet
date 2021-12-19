@@ -11,8 +11,8 @@
 #define OBJECT2_BIGGER -1
 #define OBJECTS_EQUAL 0
 #define HEAD_LINE_INVENTORY_STATUS "Inventory Status:\n"
-#define NO_PRODUCT_SOLD "Best Selling Product:\nnone"
-#define BEST_SELLING_PRODUCT_HEADER "Best Selling Product:"
+#define NO_PRODUCT_SOLD "Best Selling Product:\nnone\n"
+#define BEST_SELLING_PRODUCT_HEADER "Best Selling Product:\n"
 
 struct Matamikya_t{
     AmountSet items;
@@ -375,7 +375,7 @@ MatamikyaResult mtmPrintBestSelling(Matamikya matamikya, FILE *output){
         return MATAMIKYA_NULL_ARGUMENT;
     }
     if(asGetSize(matamikya->items) == 0){
-        fprintf(output, NO_PRODUCT_SOLD);
+        fprintf(output, "%s", NO_PRODUCT_SOLD);
         return MATAMIKYA_SUCCESS;
     }
     Product* bestSelling = asGetFirst(matamikya->items);
@@ -384,11 +384,12 @@ MatamikyaResult mtmPrintBestSelling(Matamikya matamikya, FILE *output){
             bestSelling = iterator;
         }
     }
+    printf("found best selling product %s with %f revenue", bestSelling->name, bestSelling->totalRevenue);
     if(bestSelling->totalRevenue == 0){
-        fprintf(output, NO_PRODUCT_SOLD);
+        fprintf(output, "%s", NO_PRODUCT_SOLD);
         return MATAMIKYA_SUCCESS;
     }
-    fprintf(output, BEST_SELLING_PRODUCT_HEADER);
+    fprintf(output, "%s", BEST_SELLING_PRODUCT_HEADER);
     mtmPrintIncomeLine(bestSelling->name, bestSelling->id, bestSelling->totalRevenue, output);
     return MATAMIKYA_SUCCESS;
 }
