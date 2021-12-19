@@ -54,6 +54,7 @@ Product* copyProduct(Product* product){
 }
 
 void freeProduct(Product* product){
+    printf("free product is called with product %d\n", product->id);
     product->freeDataFunction(product->productData);
     free(product->name);
     free(product);
@@ -144,11 +145,12 @@ void matamikyaDestroy(Matamikya matamikya){
 Product* initProduct(const unsigned int id, const char *name, const MatamikyaAmountType *amountType, const MtmProductData customData,
                  MtmCopyData copyData, MtmFreeData freeData, MtmGetProductPrice prodPrice)
 {
-    Product* newProduct = (Product*) malloc(sizeof(Product));
+    Product* newProduct = (Product*) malloc(sizeof(Product));\
     if (newProduct == NULL){
         return NULL;
     }
     newProduct->id = id;
+    printf("Creating new product %d\n", newProduct->id);
     newProduct->name = (char*) malloc(strlen(name) + 1);
     strcpy(newProduct->name, name);
     newProduct->productData = copyData(customData);
@@ -180,12 +182,15 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
     }
     AmountSetResult registerResult = asRegister(matamikya->items, newProduct);
     if(registerResult == AS_ITEM_ALREADY_EXISTS){
+        freeProduct(newProduct);
         return MATAMIKYA_PRODUCT_ALREADY_EXIST;
     }
     AmountSetResult changeAmountResult = asChangeAmount(matamikya->items, newProduct, amount);
     if(changeAmountResult == AS_INSUFFICIENT_AMOUNT){
+        freeProduct(newProduct);
         return MATAMIKYA_INVALID_AMOUNT;
     }
+    freeProduct(newProduct);
     return MATAMIKYA_SUCCESS;
 }
 
@@ -235,6 +240,7 @@ unsigned int mtmCreateNewOrder(Matamikya matamikya){
         return 0;
     }
     SetResult result = setAdd(matamikya->orders, order);
+    orderFree(order); // Set creates a new copy so old one needs to be freed
     if(result != SET_SUCCESS){
         return 0;
     }
