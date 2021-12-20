@@ -61,6 +61,9 @@ static Node* linkNewNode(Node** nextPointer, const char* string, int amount){
 
 AmountSet asCopy(AmountSet set)
 {
+    if(!set){
+        return NULL;
+    }
     AmountSet copy = asCreate();
     if(!copy){
         return NULL;

@@ -11,7 +11,7 @@ matamikya_main.o:
 	$(CC) -c $(CFLAGS) tests/matamikya_main.c
 
 matamikya_tests.o:
-	$(CC) -c $(CFLAGS) tests/matamikya_tests.c
+	$(CC) -c  $(CFLAGS) tests/matamikya_tests.c
 
 clean:
 	rm -rf $(OBJS) $(EXEC)
