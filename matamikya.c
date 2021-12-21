@@ -136,11 +136,13 @@ Matamikya matamikyaCreate(){
     matamikya->items = asCreate((void* (*)(void *))copyProduct, (void (*)(void *))freeProduct,
                                 (int (*)(void*, void*))compareProducts);
     if(!matamikya->items){
+        matamikyaDestroy(matamikya);
         return NULL;
     }
     matamikya->orders = setCreate((void* (*)(void *))copyOrder, (void (*)(void *))orderFree,
                                                                                 (int (*)(void*, void*))orderCompare);
     if(!matamikya->orders){
+        matamikyaDestroy(matamikya);
         return NULL;
     }
     matamikya->ordersIndex = 0;
@@ -156,7 +158,7 @@ void matamikyaDestroy(Matamikya matamikya){
     free(matamikya);
 }
 
-Product* initProduct(const unsigned int id, const char *name, const MatamikyaAmountType *amountType, const MtmProductData customData,
+Product* initProduct(const unsigned int id, const char *name, const MatamikyaAmountType amountType, const MtmProductData customData,
                  MtmCopyData copyData, MtmFreeData freeData, MtmGetProductPrice prodPrice)
 {
     Product* newProduct = (Product*) malloc(sizeof(Product));\
@@ -173,7 +175,7 @@ Product* initProduct(const unsigned int id, const char *name, const MatamikyaAmo
     newProduct->productData = copyData(customData);
     newProduct->freeDataFunction = freeData;
     newProduct->copyDataFunction = copyData;
-    newProduct->amountType = *amountType;
+    newProduct->amountType = amountType;
     newProduct->prodPriceFunction = prodPrice;
     newProduct->totalRevenue = 0;
     return newProduct;
@@ -183,7 +185,7 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
                               const double amount, const MatamikyaAmountType amountType,
                               const MtmProductData customData, MtmCopyData copyData,
                               MtmFreeData freeData, MtmGetProductPrice prodPrice){
-    if(!(matamikya && name && customData && copyData && freeData)){
+    if(!(matamikya && name && customData && copyData && freeData && prodPrice)){
         return MATAMIKYA_NULL_ARGUMENT;
     }
     if(!(('a' <= name[0] && name[0] <= 'z') || ('A' <= name[0] && name[0] <= 'Z')
@@ -193,7 +195,7 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
     if(amount < 0 || isAmountInvalid(amount, amountType)){
         return MATAMIKYA_INVALID_AMOUNT;
     }
-    Product* newProduct = initProduct(id, name, &amountType, customData, copyData, freeData, prodPrice);
+    Product* newProduct = initProduct(id, name, amountType, customData, copyData, freeData, prodPrice);
     if (newProduct == NULL){
         return MATAMIKYA_OUT_OF_MEMORY;
     }
@@ -204,6 +206,7 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
     }
     AmountSetResult changeAmountResult = asChangeAmount(matamikya->items, newProduct, amount);
     if(changeAmountResult == AS_INSUFFICIENT_AMOUNT){
+        asDelete(matamikya->items, newProduct);
         freeProduct(newProduct);
         return MATAMIKYA_INVALID_AMOUNT;
     }
@@ -237,7 +240,7 @@ MatamikyaResult mtmClearProduct(Matamikya matamikya, const unsigned int id){
     if(product == NULL){
         return MATAMIKYA_PRODUCT_NOT_EXIST;
     }
-    asDelete(matamikya->items,product);
+    asDelete(matamikya->items,product);// maybe need to remove from orders
     return MATAMIKYA_SUCCESS;
 }
 
@@ -267,9 +270,9 @@ unsigned int mtmCreateNewOrder(Matamikya matamikya){
 }
 
 void addNewProductToOrder(Matamikya matamikya, const unsigned int productId, const double amount,
-                          Order *order, Product *product)
+                          Order *order)
 {
-    product = getProductById(matamikya->items, productId);
+    Product* product = getProductById(matamikya->items, productId);
     asRegister(order->items, product);
     asChangeAmount(order->items, product, amount);
     order->revenue += product->prodPriceFunction(product->productData, amount);
@@ -315,7 +318,7 @@ MatamikyaResult mtmChangeProductAmountInOrder(Matamikya matamikya, const unsigne
         if (amount < 0){
             return MATAMIKYA_INSUFFICIENT_AMOUNT;
         }
-        addNewProductToOrder(matamikya, productId, amount, order, product);
+        addNewProductToOrder(matamikya, productId, amount, order);
     }
     return MATAMIKYA_SUCCESS;
 }
