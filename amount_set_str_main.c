@@ -5,8 +5,8 @@ int main(int argc, char** argv){
     RUN_TEST(testAsCreate);
     RUN_TEST(testAsDestroy);
     RUN_TEST(testAsRegisterNullArg);
-    RUN_TEST(testAsRegisterAsItemAlreadyExis);
-    RUN_TEST(testAsRegisterFewItemst);
+    RUN_TEST(testAsRegisterAsItemAlreadyExist);
+    RUN_TEST(testAsRegisterFewItems);
     RUN_TEST(testAsCopy);
     RUN_TEST(testAsSize);
     RUN_TEST(testAsContains);
@@ -16,5 +16,6 @@ int main(int argc, char** argv){
     RUN_TEST(testAsClear);
     RUN_TEST(testAsGetFirst);
     RUN_TEST(testAsGetNext);
+    return 0;
 }
 

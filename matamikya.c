@@ -213,7 +213,6 @@ MatamikyaResult mtmNewProduct(Matamikya matamikya, const unsigned int id, const 
     freeProduct(newProduct);
     return MATAMIKYA_SUCCESS;
 }
-//TODO maybe amound is good but amount + oldAmount give value which is not good
 MatamikyaResult mtmChangeProductAmount(Matamikya matamikya, const unsigned int id, const double amount){
     if(!matamikya){
         return MATAMIKYA_NULL_ARGUMENT;
@@ -222,7 +221,9 @@ MatamikyaResult mtmChangeProductAmount(Matamikya matamikya, const unsigned int i
     if (product == NULL){
         return MATAMIKYA_PRODUCT_NOT_EXIST;
     }
-    if (isAmountInvalid(amount, product->amountType)){
+    double currentAmount;
+    asGetAmount(matamikya->items, product, &currentAmount);
+    if (isAmountInvalid(amount +currentAmount, product->amountType)){
         return MATAMIKYA_INVALID_AMOUNT;
     }
     AmountSetResult result = asChangeAmount(matamikya->items, product, amount);

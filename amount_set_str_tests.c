@@ -80,21 +80,21 @@ void testAsContains(){
 void tesAstGetAmount(){
     AmountSet set = createTemplateSet();
     double amount;
+    double newAmount1 = 4.3;
     asGetAmount(set,"a1", &amount);
     assert(amount == 0);
     asGetAmount(set,"a2", &amount);
     assert(amount == 0);
-    double newAmount = 4.3;
-    asChangeAmount(set,"a2", newAmount);
+    asChangeAmount(set,"a2", newAmount1);
     asGetAmount(set,"a2", &amount);
-    assert(amount == newAmount);
+    assert(amount == newAmount1);
 }
 
 void testAsChangeAmount(){
     AmountSet set = createTemplateSet();
     double amount = 4;
-    asChangeAmount(set,"a1", amount);
     double newAmount;
+    asChangeAmount(set,"a1", amount);
     asGetAmount(set, "a1", &newAmount);
     assert(newAmount == amount);
 }

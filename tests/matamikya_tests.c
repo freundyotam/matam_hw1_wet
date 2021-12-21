@@ -84,7 +84,6 @@ bool testModifyProducts() {
     ASSERT_OR_DESTROY(MATAMIKYA_SUCCESS == mtmChangeProductAmount(mtm, 4, -12.85));
     MatamikyaResult a = mtmChangeProductAmount(mtm, 10, 2.25);
 
-    printf("matmikea result %d product is ", a);
     ASSERT_OR_DESTROY(MATAMIKYA_INVALID_AMOUNT == a);
     ASSERT_OR_DESTROY(MATAMIKYA_INSUFFICIENT_AMOUNT == mtmChangeProductAmount(mtm, 10, -1000));
 
