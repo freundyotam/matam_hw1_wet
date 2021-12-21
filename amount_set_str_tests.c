@@ -18,7 +18,6 @@ void testAsDestroy(){
     AmountSet set = getSet();
     assert(set!=NULL);
     asDestroy(set);
-    assert(set==NULL);
 }
 
 void testAsRegisterNullArg(){
@@ -60,7 +59,6 @@ void testAsCopy(){
     while((iter1 = asGetNext(set1)) && (iter2 = asGetNext(set2))){
         assert(!strcmp(iter2, iter1));
     }
-    assert(!iter1 && !iter2);
 }
 
 void testAsSize(){
@@ -114,11 +112,11 @@ void testAsClear(){
 
 void testAsGetFirst(){
     AmountSet set = createTemplateSet();
-    assert(strcmp("a1", asGetFirst(set)));
+    assert(!strcmp("a1", asGetFirst(set)));
 }
 
 void testAsGetNext(){
     AmountSet set = createTemplateSet();
-    assert(strcmp("a1", asGetFirst(set)));
-    assert(strcmp("a2", asGetNext(set)));
+    assert(!strcmp("a1", asGetFirst(set)));
+    assert(!strcmp("a2", asGetNext(set)));
 }

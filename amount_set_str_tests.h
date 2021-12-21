@@ -1,5 +1,5 @@
 #define RUN_TEST(func) \
-    printf("Running test : " #func "... "); \
+    printf("Running test : " #func "... \n"); \
     func();
 
 void testAsCreate();
