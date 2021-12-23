@@ -6,7 +6,7 @@
 typedef struct Node {
     struct Node* next;
     char* element;
-    int amount;
+    double amount;
 } Node;
 
 
@@ -18,7 +18,7 @@ struct AmountSet_t {
 
 AmountSet asCreate()
 {
-    AmountSet amountSet = (AmountSet) malloc(sizeof(AmountSet));
+    AmountSet amountSet = (AmountSet) malloc(sizeof(*amountSet));
     if(amountSet == NULL){
         return NULL;
     }
@@ -61,6 +61,9 @@ static Node* linkNewNode(Node** nextPointer, const char* string, int amount){
 
 AmountSet asCopy(AmountSet set)
 {
+    if(!set){
+        return NULL;
+    }
     AmountSet copy = asCreate();
     if(!copy){
         return NULL;
@@ -198,6 +201,3 @@ char* asGetNext(AmountSet set)
     set->currentIteration = set->currentIteration->next;
     return set->currentIteration->element;
 }
-// TODO Add undefined the current iterator for all functions that makes it undefined
-// TODO Turn stuff into static methods
-// TODO Add Tests

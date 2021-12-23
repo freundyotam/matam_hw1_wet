@@ -82,7 +82,9 @@ bool testModifyProducts() {
     ASSERT_OR_DESTROY(MATAMIKYA_SUCCESS == mtmClearProduct(mtm, 6));
     ASSERT_OR_DESTROY(MATAMIKYA_SUCCESS == mtmChangeProductAmount(mtm, 4, 30.5));
     ASSERT_OR_DESTROY(MATAMIKYA_SUCCESS == mtmChangeProductAmount(mtm, 4, -12.85));
-    ASSERT_OR_DESTROY(MATAMIKYA_INVALID_AMOUNT == mtmChangeProductAmount(mtm, 10, 2.25));
+    MatamikyaResult a = mtmChangeProductAmount(mtm, 10, 2.25);
+
+    ASSERT_OR_DESTROY(MATAMIKYA_INVALID_AMOUNT == a);
     ASSERT_OR_DESTROY(MATAMIKYA_INSUFFICIENT_AMOUNT == mtmChangeProductAmount(mtm, 10, -1000));
 
     basePrice = 18.5;
